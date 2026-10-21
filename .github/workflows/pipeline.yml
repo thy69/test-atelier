@@ -45,7 +45,7 @@ jobs:
           path: out/image.tar
           retention-days: 3
 
-securite:
+  securite:
     needs: build
     runs-on: ubuntu-latest
     steps:
