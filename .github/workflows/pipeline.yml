@@ -4,6 +4,7 @@ name: pipeline
 on:
   push:
     branches: [main]        # chaque commit sur main
+    tags: ["v*"]  
   pull_request:
     branches: [main]        # chaque PR qui vise main
   workflow_dispatch:        # bouton "Run workflow" (lancement manuel)
@@ -14,7 +15,12 @@ permissions:
 
 env: 
   IMAGE_NAME: ghcr.io/${{ github.repository }}
-
+  SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}
+  # Sur un tag git : version = nom du tag. Sinon : version de développement
+  # et tag d'image calculé à partir du commit (sha-xxxxxxxx, cf. ci/common.sh).
+  APP_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '0.0.0-dev' }}
+  IMAGE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+  
 jobs:
   test:
     runs-on: ubuntu-latest
