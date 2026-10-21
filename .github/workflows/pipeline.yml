@@ -82,3 +82,36 @@ jobs:
           name: vulnerabilites
           path: out/vulnerabilites.txt
           retention-days: 30
+  publish:
+    needs: securite
+    if: github.event_name == 'push'   # jamais depuis une PR
+    runs-on: ubuntu-latest
+    # Seul ce job a le droit d'écrire dans le registre.
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.push.outputs.image }}
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v7
+
+      - name: Récupérer l'image (artefact du job build)
+        uses: actions/download-artifact@v8
+        with:
+          name: image
+          path: out
+
+      - name: Publier dans GitHub Container Registry
+        id: push
+        env:
+          REGISTRY: ghcr.io
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            bash ci/publish.sh latest
+          else
+            bash ci/publish.sh main
+          fi
+          echo "image=$(cat out/image-digest.txt)" >> "$GITHUB_OUTPUT"
