@@ -44,3 +44,41 @@ jobs:
           name: image
           path: out/image.tar
           retention-days: 3
+
+securite:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v7
+
+      # On analyse l'image construite par le job "build", pas une nouvelle.
+      - name: Récupérer l'image (artefact du job build)
+        uses: actions/download-artifact@v8
+        with:
+          name: image
+          path: out
+
+      - name: Générer la SBOM
+        run: bash ci/sbom.sh
+
+      - name: Conserver la SBOM
+        uses: actions/upload-artifact@v7
+        with:
+          name: sbom
+          path: |
+            out/sbom.cdx.json
+            out/sbom.spdx.json
+            out/sbom.txt
+          retention-days: 30
+
+      - name: Scanner les vulnérabilités
+        run: bash ci/scan.sh
+
+      - name: Conserver le rapport de vulnérabilités
+        if: always()          # même (surtout) si le scan a échoué
+        uses: actions/upload-artifact@v7
+        with:
+          name: vulnerabilites
+          path: out/vulnerabilites.txt
+          retention-days: 30
